@@ -1,39 +1,38 @@
 <?php
 
-/*
-* FIX: check for environmental variable whether we want to log or not
-* by default we dont log
-*/
-
-abstract class ConsoleLogLevels
-{
-    const Silly = 0;
-    const Debug = 1;
-    const Verbose = 2;
-    const Info = 3;
-    const Warning = 4;
-    const Error = 5;
-}
-
+/**
+ * Class Console
+ *
+ * @category Logging
+ * @author   Mark Lubkowitz <www.mlu.io>
+ * @version  1.0
+ * @link     http://console-lib.mlu.io
+ */
 class Console
 {
-    //private $logfile = '';
-    public $logfile = '';
-    //private $is_cli = false;
-    public $is_cli = false;
-    //private $log_level = ConsoleLogLevels::Silly;
-    public $log_level = ConsoleLogLevels::Debug;
+    private $logfile = '';
+    private $is_cli = false;
+    private $log_level = ConsoleLogLevels::Debug;
     private $starttime = false;
-    private $endtime = false;
+    private $timers = array();
+    private $log_pipe = ConsoleLogPipes::File;
+    private $force_logging = false;
 
 
-    public function __construct()
+    public function __construct($log = false)
     {
-//        $this->logfile = $_SERVER['PHP_SELF'].'.log.txt';
+        /* set the logfile name */
         $this->logfile = 'console.log.txt';
 
         /* determines, if the script runs from command line */
         $this->is_cli = (php_sapi_name() === 'cli');
+        
+        $this->force_logging = ($log === true);
+    }
+    
+    
+    public function pipe($log_pipe) {
+        $this->log_pipe = $log_pipe;
     }
 
 
@@ -70,17 +69,39 @@ class Console
     
     private function out($format, $values)
     {
+        if(!$this->force_logging)
+            return false;
+        
         $outline = '[' . $this->strftimeu('%Y-%m-%d %H:%M:%S.%f',microtime(true)) . '] ' . vsprintf($format, $values);
-        if($fh = fopen($this->logfile,'a')) {
-            fputs($fh,$outline."\r\n");
-            fclose($fh);
+        
+        switch($this->log_pipe) {
+            /* pipe as HTML comment */
+            case ConsoleLogPipes::HTML:
+                echo '<!-- '.htmlspecialchars($outline).' //-->';
+                break;
+                
+            /* pipe to JavaScript console */
+            case ConsoleLogPipes::JSConsole:
+                echo '<script type="text/javascript">console.log(\''.htmlspecialchars($outline).'\');</script>';
+                break;
+                
+            /* pipe to file */
+            default:
+            case ConsoleLogPipes::File:
+                if($fh = fopen($this->logfile,'a')) {
+                    fputs($fh,$outline."\r\n");
+                    fclose($fh);
+                }
+                break;
         }
     }
     
     
-    private function level_threshold($log_level) {
+    private function level_threshold($log_level)
+    {
         return $log_level >= $this->log_level;
     }
+    
     
     public function silly()
     {
@@ -91,6 +112,7 @@ class Console
         $this->out('[silly] %s', $logline);
     }
     
+    
     public function debug()
     {
         if(!$this->level_threshold(ConsoleLogLevels::Debug))
@@ -100,6 +122,7 @@ class Console
         $this->out('[debug] %s', $logline);
     }
 
+    
     public function verbose()
     {
         if(!$this->level_threshold(ConsoleLogLevels::Verbose))
@@ -109,6 +132,7 @@ class Console
         $this->out('[verbose] %s', $logline);
     }
 
+    
     public function info()
     {
         if(!$this->level_threshold(ConsoleLogLevels::Info))
@@ -118,6 +142,7 @@ class Console
         $this->out('[info] %s', $logline);
     }
 
+    
     public function log()
     {
         if(!$this->level_threshold(ConsoleLogLevels::Info))
@@ -127,6 +152,7 @@ class Console
         $this->out('%s', $logline);
     }
 
+    
     public function warn()
     {
         if(!$this->level_threshold(ConsoleLogLevels::Warning))
@@ -136,6 +162,7 @@ class Console
         $this->out('[warning] %s', $logline);
     }
 
+    
     public function error()
     {
         if(!$this->level_threshold(ConsoleLogLevels::Error))
@@ -145,27 +172,39 @@ class Console
         $this->out('[error] %s', $logline);
     }
 
-    public function timer() {
-        $this->starttime = microtime(true);
+    
+    public function timer($id = false)
+    {
+        if(!$id) {
+            if(!$this->starttime) {
+                $this->starttime = microtime(true);
+                return 0;
+            } else {
+                return microtime(true) - $this->starttime;
+            }
+        } else {
+            if(!array_key_exists($id,$this->timers)) {
+                $this->timers[$id] = microtime(true);
+                return 0;
+            } else {
+                return microtime(true) - $this->timers[$id];
+            }
+        }
     }
 
-    public function timerEnd() {
-        $this->endtime = microtime(true);
-        return $this->starttime ? $this->endtime - $this->starttime : false;
-    }
-
-    public function group() {}
-    public function groupEnd() {}
     
-    
-    public function level($new_level) {
+    public function level($new_level)
+    {
         $this->log_level = $new_level;
     }
 
-    private function is_complex($arg) {
-        /* checks, is the argument an array or an object */
+    
+    private function is_complex($arg)
+    {
+        /* checks, if the argument is an array or an object */
         return is_array($arg) || is_object($arg);
     }
+    
     
     function strftimeu($format, $microtime)
     {
@@ -179,4 +218,19 @@ class Console
     }
 }
 
-$_CONSOLE = new Console();
+abstract class ConsoleLogLevels
+{
+    const Silly = 0;
+    const Debug = 1;
+    const Verbose = 2;
+    const Info = 3;
+    const Warning = 4;
+    const Error = 5;
+}
+
+abstract class ConsoleLogPipes
+{
+    const File = 0;
+    const HTML = 1;
+    const JSConsole = 2;
+}

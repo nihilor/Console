@@ -1,23 +1,27 @@
 <?php
 
 require('console.lib.php');
-$_CONSOLE->timer();
-$_CONSOLE->level(ConsoleLogLevels::Silly);
+$console = new Console(true);
+$console->pipe(ConsoleLogPipes::JSConsole);
+$console->timer();
+$console->level(ConsoleLogLevels::Silly);
 
 /* log simple */
-$_CONSOLE->error('test');
+$console->error('test');
+$console->timer('first');
 
 /* log array */
-$_CONSOLE->warn($_SERVER);
+$console->warn($_SERVER);
 
 /* log object */
-$_CONSOLE->info($_CONSOLE);
+$console->info($console);
 
 /* log formatted string */
-$_CONSOLE->log('%s: %d','Bäume',5);
+$console->log('%d %s',5,'cups of coffee were harmed during the development.');
 
 /* log list of complex' */
-$_CONSOLE->silly($_ENV,$_SERVER,$_CONSOLE);
+$console->silly($_ENV,$_SERVER,$console);
 
 /* log runtime */
-$_CONSOLE->log('Runtime: %s',$_CONSOLE->timerEnd());
+$console->log('Exection time: %s',$console->timer());
+$console->log('Exection time: %s',$console->timer('first'));
