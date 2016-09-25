@@ -4,9 +4,9 @@
  * Class Console
  *
  * @category Logging
- * @author   Mark Lubkowitz <www.mlu.io>
- * @version  1.0
- * @link     http://console-lib.mlu.io
+ * @author   Mark Lubkowitz <www.mark-lubkowitz.de>
+ * @version  0.9.0
+ * @link     http://www.mark-lubkowitz.de
  */
 class Console
 {

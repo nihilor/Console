@@ -2,8 +2,8 @@
 
 require('console.lib.php');
 $console = new Console(true);
-$console->pipe(ConsoleLogPipes::JSConsole);
 $console->timer();
+$console->pipe(ConsoleLogPipes::File);
 $console->level(ConsoleLogLevels::Silly);
 
 /* log simple */
@@ -17,11 +17,11 @@ $console->warn($_SERVER);
 $console->info($console);
 
 /* log formatted string */
-$console->log('%d %s',5,'cups of coffee were harmed during the development.');
+$console->log('%d %s',5,'cups of coffee were consumed during the development.');
 
 /* log list of complex' */
 $console->silly($_ENV,$_SERVER,$console);
 
 /* log runtime */
-$console->log('Exection time: %s',$console->timer());
 $console->log('Exection time: %s',$console->timer('first'));
+$console->log('Exection time: %s',$console->timer());
